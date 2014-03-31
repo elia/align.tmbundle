@@ -25,7 +25,7 @@ def align(text, regexp_hash, max_offset)
       number_of_spaces      = (max_offset - before.length)
       spacing               = ' ' * number_of_spaces
 
-      if shouldInsertBefore(line, regexp_hash)
+      if should_insert_before(line, regexp_hash)
         before + spacing + symbol + after
       else
         before + symbol + spacing + after
@@ -60,17 +60,17 @@ def split(line, regexp_hash)
 end
 
 # Figures out if the spacing should be added before or after the match.
-def shouldInsertBefore(line, regexp_hash)
+def should_insert_before(line, regexp_hash)
   !(regexp_hash[PADDING] == "after")
 end
 
 # Finds the width of the line with the most text before the regexp.
 def width(text, regexp)
-  text.split("\n").collect { |line| offsetOfRegexpInLine(line,regexp) }.max
+  text.split("\n").collect { |line| offset_of_regexp_in_line(line,regexp) }.max
 end
 
 # The offset of a regexp in a line of text. -1 if it doesn't match
-def offsetOfRegexpInLine(line, regexp)
+def offset_of_regexp_in_line(line, regexp)
   match = regexp.match(line)
   if !match.nil?
     match.offset(match.size &gt; 1 ? 1 : 0)[0]
@@ -80,7 +80,7 @@ def offsetOfRegexpInLine(line, regexp)
 end
 
 # Checks that the regexp matches every line
-def hasMatchForAll(text, regexp)
+def has_match_for_all(text, regexp)
   text.to_a.all?{ |line| line =~ regexp }
 end
 
@@ -108,19 +108,19 @@ def is_all_whitespace(line)
 end
 
 # finds the minimum offset of the capture of a regexp across all lines in a text.
-def minOffsetOfRegexp(text,regexp_hash)
-  min_offset = text.split("\n").collect { |line| offsetOfRegexpInLine(line,regexp_hash['regexp']) }.min
+def min_offset_of_regexp(text,regexp_hash)
+  min_offset = text.split("\n").collect { |line| offset_of_regexp_in_line(line,regexp_hash['regexp']) }.min
   { "min_offset" =&gt; min_offset, "regexp_hash" =&gt; regexp_hash }
 end
 
 # sorts and filters the regular expressions so the ones with the captures with the
 # lowest offset comes first. The ones that aren't matched or doesn't need alignment
 # are filtered out
-def prioritizeRegexps(text, regexps_hash)
+def prioritize_regexps(text, regexps_hash)
   no_blank_lines = text.to_a.select { |line| not is_all_whitespace(line) }.join
   regexps_hash.
-    select  { |rh|    hasMatchForAll(no_blank_lines, rh['regexp']) }.
-    collect { |rh|    minOffsetOfRegexp(no_blank_lines, rh) }.
+    select  { |rh|    has_match_for_all(no_blank_lines, rh['regexp']) }.
+    collect { |rh|    min_offset_of_regexp(no_blank_lines, rh) }.
     select  { |d|     not d['min_offset'].nil? }.
     sort    { |d1,d2| d1['min_offset'] &lt;=&gt; d2['min_offset'] }.
     select  { |d|     d['min_offset'] &gt; 0 }.
@@ -170,7 +170,7 @@ end
 # Formats a single block.
 def format_block(block_dict, regexps_hash)
   text = trim_all_whitespace(block_dict['lines'].join)
-  prioritizeRegexps(text, regexps_hash).each do |regexp_hash|
+  prioritize_regexps(text, regexps_hash).each do |regexp_hash|
     text = add_minimum_spacing(text, regexp_hash)
     text = align(text, regexp_hash, width(text, regexp_hash[REGEXP]))
   end
@@ -197,9 +197,10 @@ def format_block_containing_line(text, line_number, regexps_hash)
   end
 end
 
-=begin
-  Great, lets get to the formatting then.
-=end
+
+
+
+# Great, lets get to the formatting then.
 
 regexps_hash = ENV['TM_SOURCE_ALIGNMENT_PATTERN']
 regexps_hash = YAML::load(regexps_hash)
